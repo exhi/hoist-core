@@ -41,7 +41,7 @@ class HoistCoreGrailsPlugin extends Plugin {
                 urlPatterns = ['/*']
                 order = Ordered.HIGHEST_PRECEDENCE + 40
                 initParameters = [
-                        'exclusions': ".*\\.jpg,.*\\.gif",
+                        'exclusions': ".*\\.jpg,.*\\.gif,/xh/environment",
                         'token.algorithm': 'HS256',
                         'token.issuer'   : 'xh.io',
                         'token.secret'   : 'superdupersecurekey',
