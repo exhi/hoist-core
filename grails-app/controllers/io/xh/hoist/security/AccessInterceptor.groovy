@@ -24,7 +24,6 @@ class AccessInterceptor {
     }
 
     boolean before() {
-
         // Ignore Websockets -- these are destined for a non-controller based endpoint
         // established via a spring-websocket configuration mapping. (Note this is *not* currently
         // built into Hoist but is checked / allowed for here.)

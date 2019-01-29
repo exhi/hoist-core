@@ -40,44 +40,9 @@ class XhController extends BaseController {
     //------------------------
     // Identity / Auth
     //------------------------
-    def authStatus() {
-        def user = identityService.getAuthUser(request)
-        renderJSON(authenticated: user != null)
-    }
-
     def getIdentity() {
         renderJSON(identityService.clientConfig)
     }
-
-    def login(String username, String password) {
-        def success = identityService.login(username, password)
-        renderJSON(success: success)
-    }
-
-    def logout() {
-        def success = identityService.logout()
-        renderJSON(success: success)
-    }
-
-
-    //------------------------
-    // Admin Impersonation
-    //------------------------
-    def impersonationTargets() {
-        def targets = identityService.impersonationTargets
-        renderJSON(targets.collect{[username: it.username]})
-    }
-
-    def impersonate(String username) {
-        identityService.impersonate(username)
-        renderJSON(success: true)
-    }
-
-    def endImpersonate() {
-        identityService.endImpersonate()
-        renderJSON(success: true)
-    }
-
 
     //------------------------
     // Tracking
@@ -167,7 +132,7 @@ class XhController extends BaseController {
             ret[it.name + 'Version'] = it.version
         }
 
-        def user = identityService.getAuthUser(request)
+        def user = identityService.getAuthUser()
         if (user && user.isHoistAdmin) {
             def dataSource = Utils.dataSource
             ret['databaseConnectionString'] = dataSource.url

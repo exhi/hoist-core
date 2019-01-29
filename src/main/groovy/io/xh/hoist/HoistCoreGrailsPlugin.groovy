@@ -9,10 +9,12 @@ package io.xh.hoist
 
 import grails.plugins.Plugin
 import io.xh.hoist.exception.ExceptionRenderer
-import io.xh.hoist.security.HoistSecurityFilter
+
 import io.xh.hoist.util.Utils
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.core.Ordered
+import io.xh.hoist.auth.AuthFilter
+
 
 class HoistCoreGrailsPlugin extends Plugin {
 
@@ -35,8 +37,17 @@ class HoistCoreGrailsPlugin extends Plugin {
     Closure doWithSpring() {
         {->
             hoistIdentityFilter(FilterRegistrationBean) {
-                filter = bean(HoistSecurityFilter)
+                filter = bean(AuthFilter)
+                urlPatterns = ['/*']
                 order = Ordered.HIGHEST_PRECEDENCE + 40
+                initParameters = [
+                        'exclusions': ".*\\.jpg,.*\\.gif",
+                        'token.algorithm': 'HS256',
+                        'token.issuer'   : 'xh.io',
+                        'token.secret'   : 'superdupersecurekey',
+                        'token.leeway'   : '1',
+                        'token.expires'  : '5'
+                ]
             }
 
             exceptionRenderer(ExceptionRenderer)

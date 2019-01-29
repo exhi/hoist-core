@@ -20,6 +20,7 @@ import java.nio.file.Paths
 import static ch.qos.logback.classic.Level.ERROR
 import static ch.qos.logback.classic.Level.INFO
 import static ch.qos.logback.classic.Level.WARN
+import static ch.qos.logback.classic.Level.DEBUG
 import static io.xh.hoist.util.InstanceConfigUtils.getInstanceConfig
 
 class LogUtils {
@@ -131,7 +132,7 @@ class LogUtils {
             root(WARN, ['stdout', appLogName])
 
             // Raise Hoist to info
-            logger('io.xh', INFO)
+            logger('io.xh', DEBUG)
 
             // Logger for MonitoringService only. Do not duplicate in main log file, but write to stdout
             logger('io.xh.hoist.monitor.MonitoringService', INFO, [monitorLogName, "monitor-console"], additivity = false)
