@@ -9,7 +9,7 @@ package io.xh.hoist.user
 
 import groovy.transform.CompileStatic
 import io.xh.hoist.BaseService
-import io.xh.hoist.auth.UserIdentity
+import io.xh.hoist.auth.AuthUser
 
 /**
  * Primary service for retrieving the logged-in HoistUser (aka the application user).
@@ -36,7 +36,7 @@ class IdentityService extends BaseService {
      *  The 'apparent' user, used for most application level purposes.
      */
     HoistUser getApparentUser() {
-        UserIdentity identity = UserIdentity.get()
+        AuthUser identity = AuthUser.get()
         return findUser(identity?.apparentUsername)
     }
 
@@ -44,7 +44,7 @@ class IdentityService extends BaseService {
      *  The 'authorized' user as verified by AuthenticationService.
      */
     HoistUser getAuthUser() {
-        UserIdentity identity = UserIdentity.get()
+        AuthUser identity = AuthUser.get()
         return findUser(identity?.username)
     }
 
@@ -52,7 +52,7 @@ class IdentityService extends BaseService {
      * Is the authorized user currently impersonating someone else?
      */
     boolean isImpersonating() {
-        UserIdentity identity = UserIdentity.get()
+        AuthUser identity = AuthUser.get()
         return identity.apparentUsername != identity.username
     }
 
