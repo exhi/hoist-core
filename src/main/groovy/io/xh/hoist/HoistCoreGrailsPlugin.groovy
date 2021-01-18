@@ -16,18 +16,18 @@ import org.springframework.core.Ordered
 
 class HoistCoreGrailsPlugin extends Plugin {
 
-    def grailsVersion = '3.3.1 > *'
+    def grailsVersion = '4.0.6 > *'
     def pluginExcludes = []
 
     def title = 'hoist-core'
-    def author = 'Extremely Heavy Industries'
+    def author = 'Extremely Heavy'
     def authorEmail = 'info@xh.io'
     def description = 'Rapid Web Application Delivery System.'
     def profiles = ['web']
 
     // URL to the plugin's documentation
     def documentation = 'https://github.com/xh/hoist-core/blob/master/README.md'
-    def organization = [name: 'Extremely Heavy Industries', url: 'http://xh.io']
+    def organization = [name: 'Extremely Heavy', url: 'http://xh.io']
     def scm = [url: 'https://github.com/xh/hoist-core']
     def observe = ["services"]
 
@@ -50,13 +50,11 @@ class HoistCoreGrailsPlugin extends Plugin {
     void onChange(Map<String, Object> event) {
         def cls = event.source
         if (cls instanceof Class) {
-            Utils.withNewSession {
-                def svcs = Utils.appContext
-                        .getBeansOfType(BaseService)
-                        .values()
-                        .findAll {!it.initialized}
-                BaseService.parallelInit(svcs)
-            }
+            def svcs = Utils.appContext
+                    .getBeansOfType(BaseService)
+                    .values()
+                    .findAll {!it.initialized}
+            BaseService.parallelInit(svcs)
         }
     }
 

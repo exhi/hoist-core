@@ -7,6 +7,7 @@
 
 package io.xh.hoist.admin
 
+import grails.gorm.transactions.ReadOnly
 import io.xh.hoist.BaseController
 import io.xh.hoist.clienterror.ClientError
 import io.xh.hoist.security.Access
@@ -23,6 +24,7 @@ class ClientErrorAdminController extends BaseController {
 
     static int DEFAULT_MAX_ROWS = 25000
 
+    @ReadOnly
     def index() {
         def startDay = parseDay(params.startDay),
             endDay = parseDay(params.endDay),
@@ -40,7 +42,7 @@ class ClientErrorAdminController extends BaseController {
 
     def lookups() {
         renderJSON([
-            usernames: distinctVals('username'),
+            usernames: distinctVals('username')
         ])
     }
 

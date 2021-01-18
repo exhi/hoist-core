@@ -7,9 +7,9 @@
 
 package io.xh.hoist.util
 
-import com.grack.nanojson.JsonParser
-import com.grack.nanojson.JsonParserException
+import io.xh.hoist.json.JSONParser
 import grails.util.Holders
+import grails.util.Metadata
 import io.xh.hoist.AppEnvironment
 import io.xh.hoist.BaseService
 import io.xh.hoist.config.ConfigService
@@ -26,36 +26,34 @@ import org.springframework.context.ApplicationContext
 
 class Utils {
 
-    static Properties buildInfo = readBuildInfo()
-
     static final Date startupTime = new Date()
 
     /**
      * Internal short name of the application - lowercase, no spaces.
      */
     static String getAppCode() {
-        return buildInfo.getProperty('info.xh.appCode')
+        return Metadata.current.getProperty('info.xh.appCode')
     }
 
     /**
      * User-facing display name of the application - proper case, can include spaces.
      */
     static String getAppName() {
-        return buildInfo.getProperty('info.xh.appName')
+        return Metadata.current.getProperty('info.xh.appName')
     }
 
     /**
      * Current version, either SemVer x.y.z format or x.y-SNAPSHOT.
      */
     static String getAppVersion() {
-        return buildInfo.getProperty('info.app.version')
+        return Metadata.current.getProperty('info.app.version')
     }
 
     /**
      * Optional git commit hash or other identifier set at build time.
      */
     static String getAppBuild() {
-        return buildInfo.getProperty('info.xh.appBuild')
+        return Metadata.current.getProperty('info.xh.appBuild')
     }
 
     /**
@@ -114,22 +112,17 @@ class Utils {
     }
 
     /**
-     * Run a closure with a new hibernate session.  Useful for asynchronous routines that will not
-     * have a Grails-installed Hibernate session on the thread.
+     * Run a closure with a new hibernate transaction.
      */
-    static withNewSession(Closure c) {
-        TrackLog.withNewSession(c) // Yes, a bizarre dependency on an arbitrary domain object
+    static withTransaction(Closure c) {
+        TrackLog.withTransaction(c) // Yes, a bizarre dependency on an arbitrary domain object
     }
 
-    // TODO:  Move to Jackson when we are on Grails 4/Jackson 2.9:
-    // Jackson 2.9 has the support for FAIL_ON_TRAILING_TOKENS that we need
+    /**
+     * Return true if a String represents valid JSON.
+     */
     static boolean isJSON(String val) {
-        try {
-            if (val != null) JsonParser.any().from(val)
-            return true
-        } catch (JsonParserException ignored) {
-            return false
-        }
+        JSONParser.validate(val)
     }
 
     /**
@@ -138,27 +131,4 @@ class Utils {
     static List<BaseService> getXhServices() {
         return appContext.getBeansOfType(BaseService, false, true).collect {it.value}
     }
-
-
-    //------------------------
-    // Implementation
-    //------------------------
-    // We *should* be able to draw this build info from grails.util.Metadata object.
-    // But that object began returning nulls with grails 3.3.0.
-    // For now, we just pulls values directly from the gradle artifact used by that file.
-    // Note that our standard build.gradle injects appCode/appName
-    // See http://grailsblog.objectcomputing.com/posts/2017/04/02/add-build-info-to-your-project.html
-    private static Properties readBuildInfo() {
-        def ret = new Properties(),
-            loader = Thread.currentThread().getContextClassLoader(),
-            file = 'META-INF/grails.build.info',
-            url = loader.getResource(file) ?: loader.getResource('../../' + file)
-
-        if (url) {
-            url.withInputStream {ret.load(it)}
-        }
-
-        return ret
-    }
-    
 }

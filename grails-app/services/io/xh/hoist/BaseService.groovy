@@ -7,61 +7,79 @@
 
 package io.xh.hoist
 
+import grails.async.Promise
+import grails.async.Promises
 import grails.events.bus.EventBusAware
 import grails.util.GrailsClassUtils
 import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
-import io.reactivex.Observable
-import io.xh.hoist.async.AsyncSupport
+import io.xh.hoist.exception.ExceptionRenderer
 import io.xh.hoist.log.LogSupport
 import io.xh.hoist.util.Timer
 import io.xh.hoist.user.HoistUser
 import io.xh.hoist.user.IdentityService
 import org.springframework.beans.factory.DisposableBean
 
-import static io.xh.hoist.rx.ReactiveUtils.createObservable
+import java.util.concurrent.TimeUnit
+
+import static grails.async.Promises.task
 import static io.xh.hoist.util.DateTimeUtils.SECONDS
-import static io.xh.hoist.util.Utils.withNewSession
 
 /**
  * Standard superclass for all Hoist and Application-level services.
  * Provides template methods for service lifecycle / state management plus support for user lookups.
  */
 @Slf4j
-abstract class BaseService implements LogSupport, AsyncSupport, DisposableBean, EventBusAware {
+abstract class BaseService implements LogSupport, DisposableBean, EventBusAware {
 
     IdentityService identityService
-    private boolean _initialized = false
+    ExceptionRenderer exceptionRenderer
+    protected boolean _initialized = false
     private boolean _destroyed = false
 
     private final List<Timer> _timers = []
 
     /**
      * Initialize a collection of BaseServices in parallel.
-     * Hoist uses this method to initialize its own core services, and Applications may make one
-     * more more calls to initialize their services in an order that suits their needs.
+     *
+     * This is a blocking method.  Applications should make one more
+     * calls to it to batch initialize their services in an appropriate order.
      *
      * @param services - BaseServices to initialize
      * @param timeout - maximum time to wait for each service to init.
      */
     static void parallelInit(List services, int timeout = 30 * SECONDS) {
-        def initService = {svc ->
-            def name = svc.class.simpleName
-            createObservable(timeout: timeout) {
-                withInfo(log, "Initialized service $name") {
-                    svc.init()
-                }
-            }.onErrorReturn {e ->
-                log.info("Failed to initialize service $name: ${e.message}")
-                false
-            }
+        def allTasks = services.collect {svc ->
+            task { svc.initialize(timeout) }
         }
-
-        Observable.fromIterable(services)
-                .flatMap(initService)
-                .blockingSubscribe()
+        Promises.waitAll(allTasks)
     }
-    
+
+    /**
+     * Initialize this service.
+     *
+     * Applications should be sure to call this method in their bootstrap,
+     * either directly or indirect via BaseService.parallelInit.
+     *
+     * NOTE -- this method is designed to catch (and log) all exceptions,
+     * in order to avoid preventing server startup.
+     *
+     * @param timeout
+     * @param timeout - maximum time to wait for each service to init.
+     */
+    final void initialize(int timeout) {
+        try {
+            withInfo("Initializing") {
+                task {
+                    init()
+                }.get(timeout, TimeUnit.MILLISECONDS)
+                setupClearCachesConfigs()
+                _initialized = true
+            }
+        } catch (Throwable t) {
+            exceptionRenderer.handleException(t, this)
+        }
+    }
 
     /**
      * Create a new managed Timer bound to this service.
@@ -100,30 +118,13 @@ abstract class BaseService implements LogSupport, AsyncSupport, DisposableBean, 
         }
     }
 
-    /**
-     * Setup a managed Subscription to a Grails event with an auto-wired Hibernate session.
-     * See subscribe() for more information.
-     */
-    protected void subscribeWithSession(String eventName, Closure c) {
-        subscribe(eventName) {Object... args ->
-            withNewSession {
-                c.call(*args)
-            }
-        }
-    }
-
     //-----------------------------------
     // Core template methods for override
     //-----------------------------------
     /**
-     * Initialize the service, setting up any starting state or objects required for operation. Must be called in
-     * Application Bootstrap either directly or by inclusion in a call to parallelInit().
-     * Hoist will also call this method during development-time hot reloading, if necessary.
+     * Initialize the service, setting up any starting state or objects required for operation.
      */
-    void init() {
-        setupClearCachesConfigs()
-        _initialized = true
-    }
+    protected void init() {}
 
     /**
      * Clear or reset any service state. Can include but is not limited to clearing Cache objects - could also handle
@@ -157,7 +158,7 @@ abstract class BaseService implements LogSupport, AsyncSupport, DisposableBean, 
         identityService.username
     }
 
-    private void setupClearCachesConfigs() {
+    protected void setupClearCachesConfigs() {
         Set deps = new HashSet()
         for (Class clazz = getClass(); clazz; clazz = clazz.superclass) {
             def list = GrailsClassUtils.getStaticFieldValue(clazz, 'clearCachesConfigs')
@@ -166,11 +167,8 @@ abstract class BaseService implements LogSupport, AsyncSupport, DisposableBean, 
         
         if (deps) {
             subscribe('xhConfigChanged') {Map ev ->
-                if (deps.contains(ev.key)) {
-                    withNewSession {clearCaches()}
-                }
+                if (deps.contains(ev.key)) clearCaches()
             }
         }
     }
-    
 }

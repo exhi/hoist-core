@@ -1,5 +1,44 @@
 # Changelog
 
+## 10.0-SNAPSHOT - unreleased
+Version 7.0 includes a major upgrade of several underlying libraries, especially grails (v4.0.6) and spring-boot (2.1.13)
+With this version, Hoist can now be run on Java versions 8 - 11.  We have also cleaned up and enhanced some core
+APIs around Exception Handling and JSON parsing and configuration.
+
+### 🎁 New Features
+* Add support for Preference Diffing in the hoist-react admin tool.
+
+### 🎁 Breaking Changes
+* The trait `AsyncSupport` with its single method `asyncTask` has been removed.  Use the equivalent method `task` 
+from `grails.async.Promises` instead.
+
+* The method `subscribeWithSession` on `BaseService` has been removed.  Use `subscribe` instead.
+
+### ⚙️ Technical
+* This release upgrades the major version of grails from 3.3.9 to 4.0.3.  This major release
+includes the following upgrades of related libraries:
+    * spring boot `1.x -> 2.1.13` 
+    * groovy `2.4.15 -> 2.5.6`
+    * gradle `4.10.3 -> 5.6.4`
+    * gorm `6.1.11 -> 7.0.4`
+    * hibernate `5.1.10 -> 5.4.14`
+    * org.grails.plugins:mail `2.0.0 -> 3.0.0`
+    * apache poi  `3.1.7` -> `4.1.2`
+    
+* HttpClient has been upgraded from `4.5.6` -> `5.5.0`.  Package names have changed, and applications using
+this API (e.g. with `JSONClient`) will need to update their imports statements to reflect the new locations @
+`org.apache.hc.client5.http`  and `org.apache.hc.core5.http`.  See toolbox for examples.
+  
+* Please see the grails docs as well as the associated toolbox branch for more information
+on required changes to config and dependency files.
+
+* Applications will be required to add the `@Transactional` or `@ReadOnly` annotations to service and controller
+methods that update data with GORM. 
+
+[Commit Log](https://github.com/xh/hoist-core/compare/v9.1.0...develop)
+
+
+
 ## 9.1.0 - 2020-12-22
 
 ### 🎁 New Features
